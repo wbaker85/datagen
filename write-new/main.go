@@ -6,12 +6,19 @@ import (
 	"math/rand"
 	"net/http"
 	"net/url"
+	"os"
 	"strings"
 	"time"
 )
 
 func main() {
-	u, err := url.Parse("http://localhost:8086/write?db=mydb")
+	token := os.Getenv("TOKEN")
+
+	if token == "" {
+		panic("TOKEN must be set as env var")
+	}
+
+	u, err := url.Parse("http://localhost:8086/api/v2/write?bucket=bucket&org=org")
 	if err != nil {
 		panic(err)
 	}
@@ -46,7 +53,10 @@ func main() {
 				req := &http.Request{
 					URL:    u,
 					Method: "POST",
-					Body:   ioutil.NopCloser(strings.NewReader(batchedLp)),
+					Header: map[string][]string{
+						"Authorization": {fmt.Sprintf("Token %s", token)},
+					},
+					Body: ioutil.NopCloser(strings.NewReader(batchedLp)),
 				}
 				res, err := http.DefaultClient.Do(req)
 				if err != nil {

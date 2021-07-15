@@ -17,14 +17,13 @@ type httpQuery struct {
 
 func main() {
 	token := os.Getenv("TOKEN")
-	urlBase := os.Getenv("URL_BASE")
 
-	if token == "" || urlBase == "" {
-		panic("TOKEN and URL_BASE must be set as env vars")
+	if token == "" {
+		panic("TOKEN must be set as env var")
 	}
 
 	b, _ := ioutil.ReadFile("query.txt")
-	url, _ := url.Parse(fmt.Sprintf("%s/api/v2/query?org=org", urlBase))
+	u, _ := url.Parse("http://localhost:8086/api/v2/query?org=org")
 
 	q := httpQuery{
 		Query: string(b),
@@ -42,7 +41,7 @@ func main() {
 
 	for i := 0; i < numReqs; i++ {
 		req := &http.Request{
-			URL:    url,
+			URL:    u,
 			Method: "POST",
 			Header: map[string][]string{
 				"Authorization": {fmt.Sprintf("Token %s", token)},
@@ -71,10 +70,18 @@ func main() {
 		if elapsed < minTime {
 			minTime = elapsed
 		}
+
+		if i == numReqs-1 {
+			b, _ := ioutil.ReadAll(res.Body)
+			fmt.Println("*** final response ***")
+			fmt.Println(string(b))
+		}
 	}
+
+	avg := time.Duration(totTime.Nanoseconds() / int64(numReqs))
 
 	fmt.Printf("Did %d queries\n", numReqs)
 	fmt.Println("Max time:", maxTime)
 	fmt.Println("Min time:", minTime)
-
+	fmt.Println("Avg time:", avg)
 }
